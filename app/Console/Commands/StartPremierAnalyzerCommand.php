@@ -88,7 +88,7 @@ class StartPremierAnalyzerCommand extends Command
 
     private function prepareMessageString(string $message): string
     {
-        $message = $message . self::CR . self::ETX;
+        $message .= self::CR . self::ETX;
         $checksum = $this->getChecksum($message);
         if (strlen($checksum) === 1) {
             $checksum = '0' . $checksum;
@@ -109,7 +109,7 @@ class StartPremierAnalyzerCommand extends Command
             $checksum += ord($message[$i]);
         }
         $checksum %= 256;
-        $checksum = $checksum & 0xFF;
+        $checksum &= 0xFF;
         return strtoupper(dechex($checksum));
     }
 }
