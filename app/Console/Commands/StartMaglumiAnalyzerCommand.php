@@ -5,7 +5,7 @@ namespace App\Console\Commands;
 use App\Enums\HexCodes;
 use Illuminate\Console\Command;
 
-class StartMaglumiServer extends Command
+class StartMaglumiAnalyzerCommand extends Command
 {
     const ACK = HexCodes::ACK->value;
     const NAK = HexCodes::NAK->value;
@@ -16,8 +16,8 @@ class StartMaglumiServer extends Command
     const CR = HexCodes::CR->value;
     const LF = HexCodes::LF->value;
 
-    protected $signature = 'socket:start';
-    protected $description = 'Start the socket server';
+    protected $signature = 'maglumi:start';
+    protected $description = 'Start the maglumi socket server';
 
     private $results = [
         'R|1|^3218577797|^^^25-OH VD II|5.7|%|4.0-6.0|N||F|||20240507|', // Vitamino D koncentracijos nustatymas (25-hidroksivitaminas D)
