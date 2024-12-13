@@ -40,7 +40,7 @@ class StartPremierAnalyzerCommand extends Command
         $messages = [
             '1H|\^&|||PREMIER^100166||||||ASTM RECVR|||P|E 1394-97|20240909120850',
             '2P|1',
-            '3O|1||3588820543|^^^PREMIER HBA1C|R|||||||||||||||||||WL+i^001|F',
+            '3O|1||5115602572|^^^PREMIER HBA1C|R|||||||||||||||||||WL+i^001|F',
             '4R|1|^^^GHb|---|%||||F||||20240906164512||',
             '5R|2|^^^HbA1c|8.5|%||||F||||20240906164512||',
             '6R|3|^^^AG|---|mg/dl||||F||||20240906164512||',

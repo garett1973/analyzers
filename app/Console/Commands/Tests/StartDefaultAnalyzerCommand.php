@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Enums\HexCodes;
 use Illuminate\Console\Command;
+use Socket;
 
 class StartDefaultAnalyzerCommand extends Command
 {
@@ -51,7 +52,7 @@ class StartDefaultAnalyzerCommand extends Command
         socket_bind($serverSocket, $ip, $port);
         socket_listen($serverSocket);
 
-        $this->info("Socket server started on {$ip}:{$port}");
+        $this->info("Socket server started on $ip:$port");
 
         $idle = true;
         $counter = 5;
@@ -131,12 +132,12 @@ class StartDefaultAnalyzerCommand extends Command
         }
     }
 
-    private function sendENQ(false|\Socket $clientSocket): void {
+    private function sendENQ(false|Socket $clientSocket): void {
         socket_write($clientSocket, self::ENQ, strlen(self::ENQ));
         echo "Sent ENQ\n";
     }
 
-    private function sendHeader(false|\Socket $clientSocket): false|string {
+    private function sendHeader(false|Socket $clientSocket): false|string {
         $header = $this->getLongHeader();
         echo "String header: " . $header . "\n";
         $header = bin2hex($header) . self::ETX;
@@ -161,7 +162,7 @@ class StartDefaultAnalyzerCommand extends Command
         return dechex($checksum);
     }
 
-    private function sendResult(false|\Socket $clientSocket): false|string {
+    private function sendResult(false|Socket $clientSocket): false|string {
         $result = bin2hex($this->results[array_rand($this->results)]);
         echo "String result: " . hex2bin($result) . "\n";
         $result = self::STX . $result;
@@ -173,7 +174,7 @@ class StartDefaultAnalyzerCommand extends Command
         return socket_read($clientSocket, 1024);
     }
 
-    private function sendOrderRequest(false|\Socket $clientSocket): false|string {
+    private function sendOrderRequest(false|Socket $clientSocket): false|string {
         $orderRequest = bin2hex('Q|1|^3218577797||ALL||||||||O');
         $checksum = $this->getChecksum($orderRequest);
         echo "Sending order request: " . hex2bin($orderRequest) . "\n";
@@ -182,7 +183,7 @@ class StartDefaultAnalyzerCommand extends Command
         return socket_read($clientSocket, 1024);
     }
 
-    private function sendTerminator(false|\Socket $clientSocket): false|string {
+    private function sendTerminator(false|Socket $clientSocket): false|string {
         $terminator = bin2hex('L|1|N');
         $checksum = $this->getChecksum($terminator);
         echo "Sending terminator: " . hex2bin($terminator) . "\n";
@@ -191,18 +192,18 @@ class StartDefaultAnalyzerCommand extends Command
         return socket_read($clientSocket, 1024);
     }
 
-    private function sendETX(false|\Socket $clientSocket): false|string {
+    private function sendETX(false|Socket $clientSocket): false|string {
         socket_write($clientSocket, HexCodes::ETX->value, strlen(HexCodes::ETX->value));
         echo "Sent ETX\n";
         return socket_read($clientSocket, 1024);
     }
 
-    private function sendEOT(false|\Socket $clientSocket): void {
+    private function sendEOT(false|Socket $clientSocket): void {
         socket_write($clientSocket, HexCodes::EOT->value, strlen(HexCodes::EOT->value));
         echo "Sent EOT\n";
     }
 
-    private function handleIncomingOrder(false|\Socket $clientSocket): void {
+    private function handleIncomingOrder(false|Socket $clientSocket): void {
         $this->info("Handling incoming order");
         sleep(1);
         $this->sendACK($clientSocket);
@@ -276,7 +277,6 @@ class StartDefaultAnalyzerCommand extends Command
                                 } else {
                                     sleep(1);
                                     $this->sendNAK($clientSocket);
-                                    return;
                                 }
                             } else {
                                 sleep(1);
@@ -301,12 +301,12 @@ class StartDefaultAnalyzerCommand extends Command
         }
     }
 
-    private function sendACK( false|\Socket $clientSocket ): void {
+    private function sendACK( false|Socket $clientSocket ): void {
         socket_write($clientSocket, self::ACK, strlen(self::ACK));
         echo "Sent ACK\n";
     }
 
-    private function sendNAK(false|\Socket $clientSocket): void {
+    private function sendNAK(false|Socket $clientSocket): void {
         socket_write($clientSocket, HexCodes::NAK->value, strlen(HexCodes::NAK->value));
         echo "Sent NAK\n";
     }
@@ -323,56 +323,7 @@ class StartDefaultAnalyzerCommand extends Command
         return $checksum == $checksumCalc;
     }
 
-    private function checkIfTimeout( $clientSocket ): bool {
-        $errorCode = socket_last_error($clientSocket);
-        if ($errorCode == SOCKET_ETIMEDOUT) {
-            echo "Timeout occurred\n";
-            return true;
-        }
-        return false;
-    }
-
-    private function sendSTX(false|\Socket $clientSocket): void {
-        socket_write($clientSocket, HexCodes::STX->value, strlen(HexCodes::STX->value));
-        echo "Sent STX\n";
-    }
-
-    private function sendComment(false|\Socket $clientSocket): false|string {
-        $comment = bin2hex('C|1|^3218577797|Comment|');
-        $checksum = $this->getChecksum($comment);
-        echo "Sending comment: " . hex2bin($comment) . "\n";
-        $comment = $comment . $checksum;
-        socket_write($clientSocket, $comment, strlen($comment));
-        return socket_read($clientSocket, 1024);
-    }
-
-    private function waitForData($socket, $timeout = 1): false|string|null {
-        if (!is_resource($socket)) {
-            echo "Error: Invalid socket resource\n";
-            return false;
-        }
-        $read = [$socket];
-        $write = null;
-        $except = null;
-
-        $numChangedStreams = stream_select($read, $write, $except, $timeout);
-
-        if ($numChangedStreams === false) {
-            echo "Error: stream_select failed\n";
-            return false;
-        } elseif ($numChangedStreams > 0) {
-            // Data is available to read
-            $data = fread($socket, 1024); // Adjust the buffer size as needed
-            echo "Received data: $data\n";
-            return $data;
-        } else {
-            // Timeout occurred, no data available
-            echo "No data received within $timeout second(s)\n";
-            return null;
-        }
-    }
-
-    private function recvACK(false|\Socket $clientSocket): bool
+    private function recvACK(false|Socket $clientSocket): bool
     {
         $ack = socket_read($clientSocket, 1024);
         if ($ack == self::ACK) {
