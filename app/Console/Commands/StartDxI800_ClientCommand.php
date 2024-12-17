@@ -5,7 +5,7 @@ namespace App\Console\Commands;
 use App\Enums\HexCodes;
 use Illuminate\Console\Command;
 
-class StartSysmex_CS2500_ClientCommand extends Command
+class StartDxI800_ClientCommand extends Command
 {
 
     public const STX = HexCodes::STX->value;
@@ -13,6 +13,9 @@ class StartSysmex_CS2500_ClientCommand extends Command
     public const EOT = HexCodes::EOT->value;
     public const CR = HexCodes::CR->value;
     public const LF = HexCodes::LF->value;
+    public const ACK = HexCodes::ACK->value;
+    public const NAK = HexCodes::NAK->value;
+    public const ENQ = HexCodes::ENQ->value;
 
     private $socket;
     private $connection;
@@ -32,57 +35,65 @@ class StartSysmex_CS2500_ClientCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'sysmex2500:connect';
+    protected $signature = 'dxi800:connect';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Sysmex client sends messages to ths Sysmex server';
+    protected $description = 'DxI800 client sends messages to ths Sysmex server';
 
     protected array $messages = [
         [
-            '1H|\^&|||CS-2500^01-70^21768^^^Rezus^BV981798||||||||E1394-97',
-            '2P|1||||^Grazina^Dauksiene',
-            '3O|1||000000^02^     6550049260^B^||R||||||N',
-            '4R|1|^^^041^PT INN~sec^100.00^A^^^|  10.6|sec||N||||||20240919152929',
-            '5R|2|^^^042^PT INN~%^100.00^A^^^| 117.2|%||N||||||20240919152929',
-            '6C|1|I|CAL^042^^7^|I',
-            '7R|3|^^^043^PT INN cal~INR^100.00^A^^^|  0.93|||N||||||20240919152929',
-            '0C|1|I|CAL^043^^7^|I',
-            '1R|4|^^^044^DFbg INN~g_L^100.00^A^^^|   5.0|g/L||>||||||20240919152929',
-            '2C|1|I|CAL^044^^7^|I',
-            '3C|2|I|LOT^040^PT Inn^564636|I',
-            '4R|5|^^^051^APTT FS~sec^100.00^A^^^|  25.4|sec||N||||||20240919152929',
-            '5C|1|I|LOT^050^APTT FS^562461|I',
-            '6L|1|N'
+            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522084809',
+            '2Q|1|^1200013589||ALL||||||||O',
+            '3L|1|F'
         ],
         [
-            '1H|\^&|||CS-2500^01-70^21768^^^Rezus^BV981798||||||||E1394-97',
-            '2P|1||||^Alfonsas^Juozaitis',
-            '3O|1||000000^01^     6550049257^B^||R||||||N',
-            '4R|1|^^^041^PT INN~sec^100.00^A^^^|  11.8|sec||N||||||20240919152849',
-            '5R|2|^^^042^PT INN~%^100.00^A^^^|  88.7|%||N||||||20240919152849',
-            '6C|1|I|CAL^042^^7^|I',
-            '7R|3|^^^043^PT INN cal~INR^100.00^A^^^|  1.05|||N||||||20240919152849',
-            '0C|1|I|CAL^043^^7^|I',
-            '1R|4|^^^044^DFbg INN~g_L^100.00^A^^^|   5.0|g/L||>||||||20240919152849',
-            '2C|1|I|CAL^044^^7^|I',
-            '3C|2|I|LOT^040^PT Inn^564636|I',
-            '4R|5|^^^051^APTT FS~sec^100.00^A^^^|  26.1|sec||N||||||20240919152849',
-            '5C|1|I|LOT^050^APTT FS^562461|I',
-            '6L|1|N'
+            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522084812',
+            '2Q|1|^7080178841||ALL||||||||O',
+            '3L|1|F'
         ],
         [
-            '1H|\^&|||CS-1600^00-21^12812^^^CS-1600^BQ203979||||||||E1394-97',
-            '2P|1||||^^',
-            '3O|1||000003^02^     1200014336^B^^||R||||||N',
-            '4R|1|^^^041^PT~sec^100.00^A^^^^|40.6|sec||N||||||20240619145853',
-            '5R|2|^^^042^PT~%^100.00^A^^^^|12.8|%||N||||||20240619145853',
-            '6R|3|^^^044^PT cal~INR^100.00^A^^^^|4.22|||N||||||20240619145853',
-            '7R|4|^^^045^DFbg~gL^100.00^A^^^^|5.0|g/L||>||||||20240619145853',
-            '0L|1|N'
+            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522084815',
+            '2Q|1|^7030133133||ALL||||||||O',
+            '3L|1|F'
+        ],
+        [
+            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522090500',
+            '2P|1|1200013589',
+            '3O|1|1200013589|^59^1|^^^Testo^1|||||||||||Serum||||||||||F',
+            '4R|1|^^^Testo^1|15.44|nmol/L||N||F||||20240522090519|609385',
+            '5L|1|F'
+        ],
+        [
+            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522090545',
+            '2P|1|7080178841',
+            '3O|1|7080178841|^69^4|^^^Testo^1|||||||||||Serum||||||||||F',
+            '4R|1|^^^Testo^1|31.91|nmol/L||N||F||||20240522090604|609385',
+            '5L|1|F'
+        ],
+        [
+            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522090715',
+            '2P|1|7030133133',
+            '3O|1|7030133133|^69^4|^^^Testo^1|||||||||||Serum||||||||||F',
+            '4R|1|^^^Testo^1|0.82|nmol/L||N||F||||20240522090734|609385',
+            '5L|1|F'
+        ],
+        [
+            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522091633',
+            '2P|1|7030133133',
+            '3O|1|7030133133|^69^2|^^^SHBG^1|||||||||||Serum||||||||||F',
+            '4R|1|^^^SHBG^1|80.06|nmol/L||N||F||||20240522091652|609385',
+            '5L|1|F'
+        ],
+        [
+            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522094427',
+            '2P|1|7030133133',
+            '3O|1|7030133133|^69^2|^^^hFSH^1|||||||||||Serum||||||||||F',
+            '4R|1|^^^hFSH^1|86.49|IU/L||N||F||||20240522094446|609385',
+            '5L|1|F'
         ]
     ];
 
@@ -128,24 +139,41 @@ class StartSysmex_CS2500_ClientCommand extends Command
     {
         foreach ($this->messages as $message_group) {
             foreach ($message_group as $message) {
-                $this->processMessage($message);
-                sleep(1);
+                $this->processAndSendMessage($message);
+//                sleep(1);
+            }
+            $this->sendEOT();
+
+            if ($this->readResponse() === self::ENQ) {
+                echo "ENQ received\n";
+                $this->sendACK();
+                $order_info = $this->readResponse();
+                if ($order_info === self::NAK) {
+                    echo "NAK received, order not found\n";
+                }
             }
         }
+        $this->closeConnection();
     }
 
-    private function processMessage(mixed $message): void
+    private function processAndSendMessage(mixed $message): void
     {
-        $message =  $message . self::ETX;
+        $message =  $message . self::CR . self::ETX;
         $checksum = $this->calculateChecksum($message);
         $message = self::STX . $message . $checksum . self::CR . self::LF;
-        $message = bin2hex($message);
+//        $message = bin2hex($message);
         $this->sendMessage($message);
+        $response = $this->readResponse();
+        if ($response === self::NAK) {
+            echo "NAK received, resending message\n";
+            $this->sendMessage($message);
+        }
     }
 
     private function sendMessage(string $message): void
     {
         echo "Sending message: $message\n";
+        echo "Sending message in hex: " . bin2hex($message) . "\n";
         $bytes_sent = socket_write($this->socket, $message, strlen($message));
         if ($bytes_sent === false) {
             echo "Error sending message\n";
@@ -160,6 +188,43 @@ class StartSysmex_CS2500_ClientCommand extends Command
         }
         $checksum = $checksum & 0xFF; // Get the last 8 bits
         echo "Checksum: $checksum\n";
-        return strtoupper(dechex($checksum));
+        return str_pad(strtoupper(dechex($checksum)), 2, '0', STR_PAD_LEFT);
     }
+
+    private function readResponse(): false|string
+    {
+        $response = socket_read($this->socket, 1024);
+        if ($response === false) {
+            echo "Error reading response\n";
+            return false;
+        }
+
+        echo match ($response) {
+            self::ACK => "ACK received\n",
+            self::NAK => "NAK received\n",
+            self::EOT => "EOT received\n",
+            self::ENQ => "ENQ received\n",
+            default => "Unknown response: $response\n",
+        };
+        return $response;
+    }
+
+    private function sendEOT(): void
+    {
+        $this->sendMessage(self::EOT);
+        echo "EOT sent\n";
+    }
+
+    private function sendACK(): void
+    {
+        $this->sendMessage(self::ACK);
+        echo "ACK sent\n";
+    }
+
+    private function closeConnection(): void
+    {
+        socket_close($this->socket);
+        echo "Connection closed\n";
+    }
+
 }

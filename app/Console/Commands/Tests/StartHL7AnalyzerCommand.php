@@ -1,10 +1,9 @@
 <?php
 
-namespace App\Console\Commands;
+namespace App\Console\Commands\Tests;
 
 use App\Enums\HexCodes;
 use Illuminate\Console\Command;
-use phpDocumentor\Reflection\DocBlock\Tags\See;
 
 class StartHL7AnalyzerCommand extends Command
 {

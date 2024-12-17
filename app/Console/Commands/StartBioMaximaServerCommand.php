@@ -5,7 +5,7 @@ namespace App\Console\Commands;
 use App\Enums\HexCodes;
 use Illuminate\Console\Command;
 
-class StartPremierServerCommand extends Command
+class StartBioMaximaServerCommand extends Command
 {
     const ACK = HexCodes::ACK->value;
     const NAK = HexCodes::NAK->value;
@@ -15,43 +15,56 @@ class StartPremierServerCommand extends Command
     const EOT = HexCodes::EOT->value;
     const CR = HexCodes::CR->value;
     const LF = HexCodes::LF->value;
+    const DC1 = HexCodes::DC1->value;
 
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'premier:start';
+    protected $signature = 'biomaxima:start';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Starts the Premier Analyzer as server';
+    protected $description = 'Starts the BioMaxima Analyzer as server';
 
     /**
      * Execute the console command.
      */
     public function handle(): void
     {
-        $this->info('Premier Analyzer Command');
+        $this->info('Biomaxima Analyzer Command');
         $messages = [
-            '1H|\^&|||PREMIER^100166||||||ASTM RECVR|||P|E 1394-97|20240909120850',
-            '2P|1',
-            '3O|1||5115602579|^^^PREMIER HBA1C|R|||||||||||||||||||WL+i^001|F',
-            '4R|1|^^^GHb|---|%||||F||||20240906164512||',
-            '5R|2|^^^HbA1c|8.5|%||||F||||20240906164512||',
-            '6R|3|^^^AG|---|mg/dl||||F||||20240906164512||',
-            '7R|4|^^^mMA1c|70|mMol HbA1c/mol Hb||||F||||20240906164512||',
-            // '8R|5|^^^Code|1 8 12 |||||F||||20090519153950||',
-            // '9R|6|^^^Data Points|1,1,-1,-3,-2,-1,-// 1,0,1,39,442,3113,9440,13952,12531,8385,4742,2455,1209,632,379,257,194,158,133,// 116,102,92,83,77,71,65,64,64,62,65,111,295,446,427,351,294,261,243,233,222,206,184,157,131,109,87,69,54,44,37,34,33,30,26 |||||F||||20090519153950||',
-            '0L|1',
+            self::STX . self::DC1 . self::CR . self::LF .
+'ID:1210009192        ' . self::CR . self::LF .
+'NO.006068  2024-10-29' . self::CR . self::LF .
+'             15:54:27' . self::CR . self::LF .
+'                     ' . self::CR . self::LF .
+' LEU -       0CELL/uL' . self::CR . self::LF .
+' KET -       0', ' mmol/L' . self::CR . self::LF .
+' NIT -               ' . self::CR . self::LF .
+' URO        Normal   ' . self::CR . self::LF .
+'*BIL +2     33 umol/L' . self::CR . self::LF .
+' GLU -       0 mmol/L' . self::CR . self::LF .
+'*PR', 'O +-   0.15    g/L' . self::CR . self::LF .
+' SG        1.015     ' . self::CR . self::LF .
+' pH        6.5       ' . self::CR . self::LF .
+' BLD -       0CELL/uL' . self::CR . self::LF .
+' Vc  -       0 ', 'mmol/L' . self::CR . self::LF .
+'*MA      >=150   mg/L' . self::CR . self::LF .
+' Ca        5.0 mmol/L' . self::CR . self::LF .
+'*CR     >=26.4 mmol/L' . self::CR . self::LF .
+'*ACR  3.4~33.9mg/mmol' . self::CR . self::LF .
+' C', 'olor:             ' . self::CR . self::LF .
+' Clarity:            ' . self::CR . self::LF . self::ETX,
         ];
 
         $serverSocket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
         $ipAddress = '192.168.0.111';
-        $port = 12000;
+        $port = 11114;
         socket_bind($serverSocket, $ipAddress, $port);
         socket_listen($serverSocket);
         $this->info("Socket server started on {$ipAddress}:{$port}");
@@ -65,7 +78,6 @@ class StartPremierServerCommand extends Command
 
             socket_getpeername($clientSocket, $ip);
             $this->info("Client IP: $ip");
-
             while (true) {
                 if (socket_get_option($clientSocket, SOL_SOCKET, SO_ERROR) !== 0) {
                     $this->info("Client disconnected");
@@ -73,63 +85,18 @@ class StartPremierServerCommand extends Command
                 }
 
                 foreach ($messages as $message) {
-                    $message = $this->processMessage($message);
                     if (@socket_write($clientSocket, $message, strlen($message)) === false) {
                         $this->info("Socket write error: " . socket_strerror(socket_last_error($clientSocket)));
                         break;
                     }
                     $this->info("Sent: $message");
-                    $response = @socket_read($clientSocket, 1024);
-                    if ($response === false || $response === '') {
-                        $this->info("Received: empty or false");
-                        break;
-                    }
-                    $this->info("Received: $response");
                     sleep(1);
                 }
-                // send eot
-                $eot = self::EOT;
-                if (@socket_write($clientSocket, $eot, strlen($eot)) === false) {
-                    $this->info("Socket write error: " . socket_strerror(socket_last_error($clientSocket)));
-                    break;
-                }
+                break;
             }
 
             socket_close($clientSocket);
+            break;
         }
-    }
-
-
-    private function processMessage(string $message): string
-    {
-        return $this->prepareMessageString($message);
-    }
-
-    private function prepareMessageString(string $message): string
-    {
-        $message .= self::CR . self::ETX;
-        $checksum = $this->getChecksum($message);
-        if (strlen($checksum) === 1) {
-            $checksum = '0' . $checksum;
-        }
-
-        echo "Checksum: $checksum\n";
-
-        $message .= $checksum;
-        $message .= self::CR . self::LF;
-        $message = self::STX . $message;
-        return $message;
-//        return strtoupper(bin2hex($message));
-    }
-
-    private function getChecksum(string $message): string
-    {
-        $checksum = 0;
-        for ($i = 0, $iMax = strlen($message); $i < $iMax; $i++) {
-            $checksum += ord($message[$i]);
-        }
-        $checksum %= 256;
-        $checksum &= 0xFF;
-        return strtoupper(dechex($checksum));
     }
 }

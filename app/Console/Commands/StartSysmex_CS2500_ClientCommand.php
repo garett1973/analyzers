@@ -3,31 +3,81 @@
 namespace App\Console\Commands;
 
 use App\Enums\HexCodes;
-use App\Libraries\Analyzers\Default\DefaultClient;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
 
-class StartDefaultClientCommand extends Command
+class StartSysmex_CS2500_ClientCommand extends Command
 {
-    public const ACK = HexCodes::ACK->value;
-    public const NAK = HexCodes::NAK->value;
-    public const ENQ = HexCodes::ENQ->value;
+
     public const STX = HexCodes::STX->value;
     public const ETX = HexCodes::ETX->value;
     public const EOT = HexCodes::EOT->value;
     public const CR = HexCodes::CR->value;
     public const LF = HexCodes::LF->value;
-
+    public const ENQ = HexCodes::ENQ->value;
+    public const ACK = HexCodes::ACK->value;
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'sysmex2500:connect';
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Sysmex client sends messages to ths Sysmex server';
+    protected array $messages = [
+//        [
+//            '1H|\^&|||CS-2500^01-70^21768^^^Rezus^BV981798||||||||E1394-97',
+//            '2P|1||||^Grazina^Dauksiene',
+//            '3O|1||000000^02^     6550049260^B^||R||||||N',
+//            '4R|1|^^^041^PT INN~sec^100.00^A^^^|  10.6|sec||N||||||20240919152929',
+//            '5R|2|^^^042^PT INN~%^100.00^A^^^| 117.2|%||N||||||20240919152929',
+//            '6C|1|I|CAL^042^^7^|I',
+//            '7R|3|^^^043^PT INN cal~INR^100.00^A^^^|  0.93|||N||||||20240919152929',
+//            '0C|1|I|CAL^043^^7^|I',
+//            '1R|4|^^^044^DFbg INN~g_L^100.00^A^^^|   5.0|g/L||>||||||20240919152929',
+//            '2C|1|I|CAL^044^^7^|I',
+//            '3C|2|I|LOT^040^PT Inn^564636|I',
+//            '4R|5|^^^051^APTT FS~sec^100.00^A^^^|  25.4|sec||N||||||20240919152929',
+//            '5C|1|I|LOT^050^APTT FS^562461|I',
+//            '6L|1|N'
+//        ],
+//        [
+//            '1H|\^&|||CS-2500^01-70^21768^^^Rezus^BV981798||||||||E1394-97',
+//            '2P|1||||^Alfonsas^Juozaitis',
+//            '3O|1||000000^01^     6550049257^B^||R||||||N',
+//            '4R|1|^^^041^PT INN~sec^100.00^A^^^|  11.8|sec||N||||||20240919152849',
+//            '5R|2|^^^042^PT INN~%^100.00^A^^^|  88.7|%||N||||||20240919152849',
+//            '6C|1|I|CAL^042^^7^|I',
+//            '7R|3|^^^043^PT INN cal~INR^100.00^A^^^|  1.05|||N||||||20240919152849',
+//            '0C|1|I|CAL^043^^7^|I',
+//            '1R|4|^^^044^DFbg INN~g_L^100.00^A^^^|   5.0|g/L||>||||||20240919152849',
+//            '2C|1|I|CAL^044^^7^|I',
+//            '3C|2|I|LOT^040^PT Inn^564636|I',
+//            '4R|5|^^^051^APTT FS~sec^100.00^A^^^|  26.1|sec||N||||||20240919152849',
+//            '5C|1|I|LOT^050^APTT FS^562461|I',
+//            '6L|1|N'
+//        ],
+//        [
+//            '1H|\^&|||CS-1600^00-21^12812^^^CS-1600^BQ203979||||||||E1394-97',
+//            '2P|1||||^^',
+//            '3O|1||000003^02^     1200014336^B^^||R||||||N',
+//            '4R|1|^^^041^PT~sec^100.00^A^^^^|40.6|sec||N||||||20240619145853',
+//            '5R|2|^^^042^PT~%^100.00^A^^^^|12.8|%||N||||||20240619145853',
+//            '6R|3|^^^044^PT cal~INR^100.00^A^^^^|4.22|||N||||||20240619145853',
+//            '7R|4|^^^045^DFbg~gL^100.00^A^^^^|5.0|g/L||>||||||20240619145853',
+//            '0L|1|N'
+//        ]
+        [
+            '1H|\^&|||CS-2500^^21768^^^Rezus^BV981798||||||||E1394-97',
+            '2Q|1|000002^01^     1680023804^B||^^^040^PT-INN-cal\^^^050^APTT-FS|0|20241030105833',
+            '3L|1|N'
+        ]
+    ];
     private $socket;
     private $connection;
-    private bool $receiving = true;
-    private bool $order_requested = false;
-    private bool $order_found = false;
-    private string $order_record = '';
-    private string $header = '';
-    private string $patient = '';
-    private string $terminator = '';
-    private string $barcode = '';
 
     public function __construct()
     {
@@ -39,65 +89,13 @@ class StartDefaultClientCommand extends Command
     }
 
     /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'default:connect';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Default client sends messages to ths default server';
-
-    protected array $messages = [
-        [
-        '1H|\^&|||CS-2500^01-70^21768^^^Rezus^BV981798||||||||E1394-97',
-        '2P|1||||^Grazina^Dauksiene',
-        '3O|1||000000^02^     6550049260^B^||R||||||N',
-        '4R|1|^^^041^PT INN~sec^100.00^A^^^|  10.6|sec||N||||||20240919152929',
-        '5R|2|^^^042^PT INN~%^100.00^A^^^| 117.2|%||N||||||20240919152929',
-        '6C|1|I|CAL^042^^7^|I',
-        '7R|3|^^^043^PT INN cal~INR^100.00^A^^^|  0.93|||N||||||20240919152929',
-        '0C|1|I|CAL^043^^7^|I',
-        '1R|4|^^^044^DFbg INN~g_L^100.00^A^^^|   5.0|g/L||>||||||20240919152929',
-        '2C|1|I|CAL^044^^7^|I',
-        '3C|2|I|LOT^040^PT Inn^564636|I',
-        '4R|5|^^^051^APTT FS~sec^100.00^A^^^|  25.4|sec||N||||||20240919152929',
-        '5C|1|I|LOT^050^APTT FS^562461|I',
-        '6L|1|N'
-    ],
-        [
-            '1H|\^&|||CS-2500^01-70^21768^^^Rezus^BV981798||||||||E1394-97',
-            '2P|1||||^Alfonsas^Juozaitis',
-            '3O|1||000000^01^     6550049257^B^||R||||||N',
-            '4R|1|^^^041^PT INN~sec^100.00^A^^^|  11.8|sec||N||||||20240919152849',
-            '5R|2|^^^042^PT INN~%^100.00^A^^^|  88.7|%||N||||||20240919152849',
-            '6C|1|I|CAL^042^^7^|I',
-            '7R|3|^^^043^PT INN cal~INR^100.00^A^^^|  1.05|||N||||||20240919152849',
-            '0C|1|I|CAL^043^^7^|I',
-            '1R|4|^^^044^DFbg INN~g_L^100.00^A^^^|   5.0|g/L||>||||||20240919152849',
-            '2C|1|I|CAL^044^^7^|I',
-            '3C|2|I|LOT^040^PT Inn^564636|I',
-            '4R|5|^^^051^APTT FS~sec^100.00^A^^^|  26.1|sec||N||||||20240919152849',
-            '5C|1|I|LOT^050^APTT FS^562461|I',
-            '6L|1|N'
-        ],
-        [
-
-        ]
-    ];
-
-
-    /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): void
     {
         $connection = $this->connect();
         if (!$connection) {
+            echo "Error connecting to the server\n";
             return;
         }
 
@@ -106,15 +104,13 @@ class StartDefaultClientCommand extends Command
 
     public function connect(): bool
     {
-//        $ip = '85.206.48.46';
-//    $ip = '192.168.1.111';
+//        $ip = '85.206.48.46'; // rezus public address
+//        $ip = '192.168.1.111'; // rezus local address
 //        $port = 9999;
 
-//    $ip = '127.0.0.1';
-//    $port = 12000;
 
         $ip = '192.168.0.111';
-        $port = 9999;
+        $port = 12000;
 
         // Attempt to connect to the socket server
         $this->connection = @socket_connect($this->socket, $ip, $port);
@@ -122,12 +118,88 @@ class StartDefaultClientCommand extends Command
         if ($this->connection === false) {
             $errorMessage = socket_strerror(socket_last_error($this->socket));
             echo "Socket connection failed: $errorMessage\n";
-            Log::channel('default_client_log')->error(now() . " -> Socket connection failed. Error: " . ": $errorMessage");
             return false;
         }
 
         echo "Connection established\n";
-        Log::channel('default_client_log')->debug(now() . ' -> Connection to analyzer established');
         return true;
     }
+
+    public function process(): void
+    {
+        foreach ($this->messages as $message_group) {
+            socket_write($this->socket, self::ENQ, strlen(self::ENQ));
+            $response = socket_read($this->socket, 1024);
+            if ($response === self::ACK) {
+                echo "Received ACK\n";
+                foreach ($message_group as $message) {
+                    $this->processMessage($message);
+                    $resp = socket_read($this->socket, 1024);
+                    if ($resp === self::ACK) {
+                        echo "Received ACK\n";
+                    }
+                    sleep(1);
+                }
+            }
+            socket_write($this->socket, self::EOT, strlen(self::EOT));
+            echo "Sent EOT\n";
+        }
+        $inc = socket_read($this->socket, 1024);
+        if ($inc === self::ENQ) {
+            echo "Received ENQ\n";
+            socket_write($this->socket, self::ACK, strlen(self::ACK));
+            echo "Sent ACK\n";
+            $inc = socket_read($this->socket, 1024);
+            echo "Received: $inc\n";
+            socket_write($this->socket, self::ACK, strlen(self::ACK));
+            echo "Sent: ACK\n";
+            $inc = socket_read($this->socket, 1024);
+            echo "Received: $inc\n";
+            socket_write($this->socket, self::ACK, strlen(self::ACK));
+            echo "Sent: ACK\n";
+            $inc = socket_read($this->socket, 1024);
+            echo "Received: $inc\n";
+            echo "Received bin: " . hex2bin($inc) . "\n";
+            socket_write($this->socket, self::ACK, strlen(self::ACK));
+            echo "Sent: ACK\n";
+            $inc = socket_read($this->socket, 1024);
+            echo "Received: $inc\n";
+            socket_write($this->socket, self::ACK, strlen(self::ACK));
+            echo "Sent: ACK\n";
+            $inc = socket_read($this->socket, 1024);
+            if ($inc === self::EOT) {
+                echo "Received EOT\n";
+            }
+        }
+    }
+
+    private function processMessage(mixed $message): void
+    {
+        $message = $message . self::ETX;
+        $checksum = $this->calculateChecksum($message);
+        $message = self::STX . $message . $checksum . self::CR . self::LF;
+        $message = bin2hex($message);
+        $this->sendMessage($message);
+    }
+
+    function calculateChecksum($string): string
+    {
+        $checksum = 0;
+        for ($i = 0; $i < strlen($string); $i++) {
+            $checksum += ord($string[$i]);
+        }
+        $checksum = $checksum & 0xFF; // Get the last 8 bits
+        echo "Checksum: " . str_pad(strtoupper(dechex($checksum)), 2, '0', STR_PAD_LEFT) . "\n";
+        return str_pad(strtoupper(dechex($checksum)), 2, '0', STR_PAD_LEFT);
+    }
+
+    private function sendMessage(string $message): void
+    {
+        echo "Sending message: $message\n";
+        $bytes_sent = socket_write($this->socket, $message, strlen($message));
+        if ($bytes_sent === false) {
+            echo "Error sending message\n";
+        }
+    }
+
 }

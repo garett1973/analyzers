@@ -2,7 +2,7 @@
 
 namespace App\Console;
 
-use App\Console\Commands\StartMaglumiAnalyzerCommand;
+use App\Console\Commands\Tests\StartMaglumiAnalyzerCommand;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 

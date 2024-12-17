@@ -5,7 +5,7 @@ namespace App\Console\Commands;
 use App\Enums\HexCodes;
 use Illuminate\Console\Command;
 
-class StartDxI800_ClientCommand extends Command
+class StartDxI800_ServerCommand extends Command
 {
 
     public const STX = HexCodes::STX->value;
@@ -16,34 +16,18 @@ class StartDxI800_ClientCommand extends Command
     public const ACK = HexCodes::ACK->value;
     public const NAK = HexCodes::NAK->value;
     public const ENQ = HexCodes::ENQ->value;
-
-    private $socket;
-    private $connection;
-
-
-    public function __construct()
-    {
-        parent::__construct();
-        $this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        if ($this->socket === false) {
-            echo "Socket creation failed: " . socket_strerror(socket_last_error()) . "\n";
-        }
-    }
-
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'dxi800:connect';
-
+    protected $signature = 'dxi800:start';
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'DxI800 client sends messages to ths Sysmex server';
-
+    protected $description = 'Starts the DxI Analyzer as server';
     protected array $messages = [
         [
             '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522084809',
@@ -96,69 +80,66 @@ class StartDxI800_ClientCommand extends Command
             '5L|1|F'
         ]
     ];
-
+    private $server_socket;
+    private $client_socket;
 
     /**
      * Execute the console command.
      */
     public function handle(): void
     {
-        $connection = $this->connect();
-        if (!$connection) {
-            echo "Error connecting to the server\n";
-            return;
-        }
-
+        $this->server_socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+        $ipAddress = '192.168.0.111';
+        $port = 31015;
+        socket_bind($this->server_socket, $ipAddress, $port);
+        socket_listen($this->server_socket);
+        $this->info("Socket server started on {$ipAddress}:{$port}");
         $this->process();
     }
 
-    public function connect(): bool
-    {
-//        $ip = '85.206.48.46'; // rezus public address
-//        $ip = '192.168.1.111'; // rezus local address
-//        $port = 9999;
-
-
-        $ip = '192.168.0.111';
-        $port = 12000;
-
-        // Attempt to connect to the socket server
-        $this->connection = @socket_connect($this->socket, $ip, $port);
-
-        if ($this->connection === false) {
-            $errorMessage = socket_strerror(socket_last_error($this->socket));
-            echo "Socket connection failed: $errorMessage\n";
-            return false;
-        }
-
-        echo "Connection established\n";
-        return true;
-    }
 
     public function process(): void
     {
-        foreach ($this->messages as $message_group) {
-            foreach ($message_group as $message) {
-                $this->processAndSendMessage($message);
-//                sleep(1);
+        while (true) {
+            $this->client_socket = @socket_accept($this->server_socket);
+            if ($this->client_socket === false) {
+                $this->info("Failed to accept connection");
+                continue;
             }
-            $this->sendEOT();
 
-            if ($this->readResponse() === self::ENQ) {
-                echo "ENQ received\n";
-                $this->sendACK();
-                $order_info = $this->readResponse();
-                if ($order_info === self::NAK) {
-                    echo "NAK received, order not found\n";
+            socket_getpeername($this->client_socket, $ip);
+            $this->info("Client IP: $ip");
+
+            while (true) {
+                if (socket_get_option($this->client_socket, SOL_SOCKET, SO_ERROR) !== 0) {
+                    $this->info("Client disconnected");
+                    break;
                 }
+
+                foreach ($this->messages as $message_group) {
+                    foreach ($message_group as $message) {
+                        $this->processAndSendMessage($message);
+                        sleep(1);
+                    }
+                    $this->sendEOT();
+
+                    if ($this->readResponse() === self::ENQ) {
+                        echo "ENQ received\n";
+                        $this->sendACK();
+                        $order_info = $this->readResponse();
+                        if ($order_info === self::NAK) {
+                            echo "NAK received, order not found\n";
+                        }
+                    }
+                }
+                $this->closeConnection();
             }
         }
-        $this->closeConnection();
     }
 
     private function processAndSendMessage(mixed $message): void
     {
-        $message =  $message . self::CR . self::ETX;
+        $message = $message . self::CR . self::ETX;
         $checksum = $this->calculateChecksum($message);
         $message = self::STX . $message . $checksum . self::CR . self::LF;
 //        $message = bin2hex($message);
@@ -167,16 +148,6 @@ class StartDxI800_ClientCommand extends Command
         if ($response === self::NAK) {
             echo "NAK received, resending message\n";
             $this->sendMessage($message);
-        }
-    }
-
-    private function sendMessage(string $message): void
-    {
-        echo "Sending message: $message\n";
-        echo "Sending message in hex: " . bin2hex($message) . "\n";
-        $bytes_sent = socket_write($this->socket, $message, strlen($message));
-        if ($bytes_sent === false) {
-            echo "Error sending message\n";
         }
     }
 
@@ -191,9 +162,19 @@ class StartDxI800_ClientCommand extends Command
         return str_pad(strtoupper(dechex($checksum)), 2, '0', STR_PAD_LEFT);
     }
 
+    private function sendMessage(string $message): void
+    {
+        echo "Sending message: $message\n";
+        echo "Sending message in hex: " . bin2hex($message) . "\n";
+        $bytes_sent = socket_write($this->client_socket, $message, strlen($message));
+        if ($bytes_sent === false) {
+            echo "Error sending message\n";
+        }
+    }
+
     private function readResponse(): false|string
     {
-        $response = socket_read($this->socket, 1024);
+        $response = @socket_read($this->client_socket, 1024);
         if ($response === false) {
             echo "Error reading response\n";
             return false;
@@ -223,7 +204,7 @@ class StartDxI800_ClientCommand extends Command
 
     private function closeConnection(): void
     {
-        socket_close($this->socket);
+        socket_close($this->client_socket);
         echo "Connection closed\n";
     }
 

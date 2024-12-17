@@ -14,8 +14,11 @@ enum HexCodes: string
     case NAK = "\x15";
     case LF = "\x0A";
     case CR = "\x0D";
-    case FD = "\x7Ch";
-    case RD = "\x5Ch";
+    case VT = "\x0B";
+    case FS = "\x1C";
+    case FD = "\x7C";
+    case RD = "\x5C";
     case caret = "\x5Eh";
     case ampersand = "\x26h";
+    case DC1 = "\x11";
 }
