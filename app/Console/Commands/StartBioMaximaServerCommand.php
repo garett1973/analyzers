@@ -39,7 +39,7 @@ class StartBioMaximaServerCommand extends Command
         $this->info('Biomaxima Analyzer Command');
         $messages = [
             self::STX . self::DC1 . self::CR . self::LF .
-'ID:1210009192        ' . self::CR . self::LF .
+'ID:1210009197        ' . self::CR . self::LF .
 'NO.006068  2024-10-29' . self::CR . self::LF .
 '             15:54:27' . self::CR . self::LF .
 '                     ' . self::CR . self::LF .
