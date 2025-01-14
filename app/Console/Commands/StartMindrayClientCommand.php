@@ -87,6 +87,11 @@ class StartMindrayClientCommand extends Command
         $this->sendMessage($this->message);
         $response = socket_read($this->socket, 2048);
         echo "Response: $response\n";
+        sleep(5);
+        echo "Sending message again\n";
+        $this->sendMessage($this->message);
+        $response = socket_read($this->socket, 2048);
+        echo "Response 2: $response\n";
     }
 
     /**
