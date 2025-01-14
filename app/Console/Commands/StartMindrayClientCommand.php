@@ -63,8 +63,8 @@ class StartMindrayClientCommand extends Command
 //        $ip = '192.168.1.111'; // rezus local address
 //        $port = 9999;
 
-        $ip = '192.168.0.111';
-        $port = 12000;
+        $ip = '192.168.0.101';
+        $port = 31030;
 
         // Attempt to connect to the socket server
         $this->connection = @socket_connect($this->socket, $ip, $port);
@@ -86,6 +86,7 @@ class StartMindrayClientCommand extends Command
     {
         $this->sendMessage($this->message);
         $response = socket_read($this->socket, 2048);
+        echo "Response: $response\n";
     }
 
     /**
