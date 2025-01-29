@@ -113,7 +113,6 @@ class Sysmex_CS2500_Test extends Command
         }
         socket_write($this->socket, self::EOT, strlen(self::EOT));
 
-
         $inc = socket_read($this->socket, 1024);
         if ($inc === self::ENQ) {
             echo "Received ENQ\n";
@@ -163,13 +162,13 @@ class Sysmex_CS2500_Test extends Command
 
     private function processMessage(mixed $message): void
     {
-        $message = $message . self::ETX;
+        $message .= self::ETX;
         $checksum = $this->calculateChecksum($message);
         $message = self::STX . $message . $checksum . self::CR . self::LF;
         $this->sendMessage($message);
     }
 
-    function calculateChecksum($string): string
+    public function calculateChecksum($string): string
     {
         $checksum = 0;
         for ($i = 0, $iMax = strlen($string); $i < $iMax; $i++) {
