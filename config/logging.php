@@ -127,6 +127,12 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'sysmex_test_log' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/sysmex_test.log'),
+            'level' => 'debug',
+        ],
+
     ],
 
 ];

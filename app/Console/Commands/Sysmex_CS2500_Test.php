@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Enums\HexCodes;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class Sysmex_CS2500_Test extends Command
 {
@@ -61,16 +62,21 @@ class Sysmex_CS2500_Test extends Command
         $ip = '192.168.1.247';
         $port = 6670;
 
+        echo "Attempting to connect to $ip:$port\n";
+        Log::channel('sysmex_test_log')->info("Attempting to connect to $ip:$port");
+
         // Attempt to connect to the socket server
         $this->connection = @socket_connect($this->socket, $ip, $port);
 
         if ($this->connection === false) {
             $errorMessage = socket_strerror(socket_last_error($this->socket));
             echo "Socket connection failed: $errorMessage\n";
+            Log::channel('sysmex_test_log')->error("Socket connection failed: $errorMessage");
             return false;
         }
 
         echo "Connection established\n";
+        Log::channel('sysmex_test_log')->info("Connection established");
         return true;
     }
 
@@ -90,14 +96,18 @@ class Sysmex_CS2500_Test extends Command
         ];
 
         socket_write($this->socket, self::ENQ, strlen(self::ENQ));
+        echo "Sent ENQ\n";
+        Log::channel('sysmex_test_log')->info("Sent ENQ");
         $response = socket_read($this->socket, 1024);
         if ($response === self::ACK) {
             echo "Received ACK\n";
+            Log::channel('sysmex_test_log')->info("Received ACK");
             foreach ($this->messages as $message) {
                 $this->processMessage($message);
                 $resp = socket_read($this->socket, 1024);
                 if ($resp === self::ACK) {
                     echo "Received ACK\n";
+                    Log::channel('sysmex_test_log')->info("Received ACK");
                 }
             }
         }
@@ -107,31 +117,46 @@ class Sysmex_CS2500_Test extends Command
         $inc = socket_read($this->socket, 1024);
         if ($inc === self::ENQ) {
             echo "Received ENQ\n";
+            Log::channel('sysmex_test_log')->info("Received ENQ");
             socket_write($this->socket, self::ACK, strlen(self::ACK));
             echo "Sent ACK\n";
+            Log::channel('sysmex_test_log')->info("Sent ACK");
             $inc = socket_read($this->socket, 1024); // header
             echo "Received header: $inc\n";
+            Log::channel('sysmex_test_log')->info("Received header: $inc");
             echo "Received header hex: " . bin2hex($inc) . "\n";
+            Log::channel('sysmex_test_log')->info("Received header hex: " . bin2hex($inc));
             socket_write($this->socket, self::ACK, strlen(self::ACK));
             echo "Sent: ACK\n";
+            Log::channel('sysmex_test_log')->info("Sent: ACK");
             $inc = socket_read($this->socket, 1024); // patient
             echo "Received patient: $inc\n";
+            Log::channel('sysmex_test_log')->info("Received patient: $inc");
             echo "Received patient hex: " . bin2hex($inc) . "\n";
+            Log::channel('sysmex_test_log')->info("Received patient hex: " . bin2hex($inc));
             socket_write($this->socket, self::ACK, strlen(self::ACK));
             echo "Sent: ACK\n";
+            Log::channel('sysmex_test_log')->info("Sent: ACK");
             $inc = socket_read($this->socket, 1024); // order info
             echo "Received order info: $inc\n";
+            Log::channel('sysmex_test_log')->info("Received order info: $inc");
             echo "Received order info bin: " . bin2hex($inc) . "\n";
+            Log::channel('sysmex_test_log')->info("Received order info bin: " . bin2hex($inc));
             socket_write($this->socket, self::ACK, strlen(self::ACK));
             echo "Sent: ACK\n";
+            Log::channel('sysmex_test_log')->info("Sent: ACK");
             $inc = socket_read($this->socket, 1024); // terminator
             echo "Received terminator: $inc\n";
+            Log::channel('sysmex_test_log')->info("Received terminator: $inc");
             echo "Received terminator hex: " . bin2hex($inc) . "\n";
+            Log::channel('sysmex_test_log')->info("Received terminator hex: " . bin2hex($inc));
             socket_write($this->socket, self::ACK, strlen(self::ACK));
             echo "Sent: ACK\n";
+            Log::channel('sysmex_test_log')->info("Sent: ACK");
             $inc = socket_read($this->socket, 1024);
             if ($inc === self::EOT) {
                 echo "Received EOT\n";
+                Log::channel('sysmex_test_log')->info("Received EOT");
             }
         }
     }
@@ -158,9 +183,11 @@ class Sysmex_CS2500_Test extends Command
     private function sendMessage(string $message): void
     {
         echo "Sending message: $message\n";
+        Log::channel('sysmex_test_log')->info("Sending message: $message");
         $bytes_sent = socket_write($this->socket, $message, strlen($message));
         if ($bytes_sent === false) {
             echo "Error sending message\n";
+            Log::channel('sysmex_test_log')->error("Error sending message");
         }
     }
 
@@ -180,5 +207,4 @@ class Sysmex_CS2500_Test extends Command
     {
         return '4L|1|N';
     }
-
 }
