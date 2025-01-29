@@ -72,7 +72,7 @@ class StartSysmex_CS2500_ClientCommand extends Command
 //        ]
         [
             '1H|\^&|||CS-2500^^21768^^^Rezus^BV981798||||||||E1394-97',
-            '2Q|1|000002^01^     1680023804^B||^^^040^PT-INN-cal\^^^050^APTT-FS|0|20241030105833',
+            '2Q|1|000002^01^     1680023804^B||^^^040^PT-INN-cal\^^^050^APTT-FS|0|',
             '3L|1|N'
         ]
     ];
