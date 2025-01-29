@@ -172,10 +172,10 @@ class Sysmex_CS2500_Test extends Command
     function calculateChecksum($string): string
     {
         $checksum = 0;
-        for ($i = 0; $i < strlen($string); $i++) {
+        for ($i = 0, $iMax = strlen($string); $i < $iMax; $i++) {
             $checksum += ord($string[$i]);
         }
-        $checksum = $checksum & 0xFF; // Get the last 8 bits
+        $checksum &= 0xFF; // Get the last 8 bits
         echo "Checksum: " . str_pad(strtoupper(dechex($checksum)), 2, '0', STR_PAD_LEFT) . "\n";
         return str_pad(strtoupper(dechex($checksum)), 2, '0', STR_PAD_LEFT);
     }
