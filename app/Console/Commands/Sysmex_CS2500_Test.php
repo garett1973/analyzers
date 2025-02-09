@@ -32,7 +32,7 @@ class Sysmex_CS2500_Test extends Command
     private $socket;
     private $connection;
     private array $messages = [];
-    private $barcode = '7010123815';
+    private $barcode = '1200020531';
 
     public function __construct()
     {
@@ -140,7 +140,7 @@ class Sysmex_CS2500_Test extends Command
             echo "Received order info: $inc\n";
             Log::channel('sysmex_test_log')->info("Received order info: $inc");
             echo "Received order info bin: " . bin2hex($inc) . "\n";
-            Log::channel('sysmex_test_log')->info("Received order info bin: " . bin2hex($inc));
+            Log::channel('sysmex_test_log')->info("Received order info hex: " . bin2hex($inc));
             socket_write($this->socket, self::ACK, strlen(self::ACK));
             echo "Sent: ACK\n";
             Log::channel('sysmex_test_log')->info("Sent: ACK");
