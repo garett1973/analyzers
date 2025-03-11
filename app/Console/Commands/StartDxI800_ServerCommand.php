@@ -29,56 +29,56 @@ class StartDxI800_ServerCommand extends Command
      */
     protected $description = 'Starts the DxI Analyzer as server';
     protected array $messages = [
-//        [
-//            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522084809',
-//            '2Q|1|^4350084590||ALL||||||||O',
-////            '3L|1|F'
-//        ],
-//        [
-//            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522084812',
-//            '2Q|1|^8502973279||ALL||||||||O',
-//////            '3L|1|F'
-//        ],
+        [
+            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522084809',
+            '2Q|1|^4350084590||ALL||||||||O',
+            '3L|1|F'
+        ],
+        [
+            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522084812',
+            '2Q|1|^8502973279||ALL||||||||O',
+            '3L|1|F'
+        ],
         [
             '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522084815',
             '2Q|1|^7080217059||ALL||||||||O',
-//            '3L|1|F'
+            '3L|1|F'
         ],
-        [
-            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522090500',
-            '2P|1|1200013589',
-            '3O|1|1200013589|^59^1|^^^CEA2^1|||||||||||Serum||||||||||F',
-            '4R|1|^^^HIVc2^1|15.44|nmol/L||N||F||||20240522090519|609385',
-//            '5L|1|F'
-        ],
-        [
-            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522090545',
-            '2P|1|7080178841',
-            '3O|1|7080178841|^69^4|^^^Testo^1|||||||||||Serum||||||||||F',
-            '4R|1|^^^PSA-Hyb^1|31.91|nmol/L||N||F||||20240522090604|609385',
-//            '5L|1|F'
-        ],
-        [
-            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522090715',
-            '2P|1|7030133133',
-            '3O|1|7030133133|^69^4|^^^Testo^1|||||||||||Serum||||||||||F',
-            '4R|1|^^^VitB12^1|0.82|nmol/L||N||F||||20240522090734|609385',
-//            '5L|1|F'
-        ],
-        [
-            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522091633',
-            '2P|1|7030133133',
-            '3O|1|7030133133|^69^2|^^^SHBG^1|||||||||||Serum||||||||||F',
-            '4R|1|^^^Ferritin^1|80.06|nmol/L||N||F||||20240522091652|609385',
-//            '5L|1|F'
-        ],
-        [
-            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522094427',
-            '2P|1|7030133133',
-            '3O|1|7030133133|^69^2|^^^hFSH^1|||||||||||Serum||||||||||F',
-            '4R|1|^^^HBsAgV3^1|86.49|IU/L||N||F||||20240522094446|609385',
-//            '5L|1|F'
-        ]
+//        [
+//            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522090500',
+//            '2P|1|1200013589',
+//            '3O|1|1200013589|^59^1|^^^CEA2^1|||||||||||Serum||||||||||F',
+//            '4R|1|^^^HIVc2^1|15.44|nmol/L||N||F||||20240522090519|609385',
+////            '5L|1|F'
+//        ],
+//        [
+//            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522090545',
+//            '2P|1|7080178841',
+//            '3O|1|7080178841|^69^4|^^^Testo^1|||||||||||Serum||||||||||F',
+//            '4R|1|^^^PSA-Hyb^1|31.91|nmol/L||N||F||||20240522090604|609385',
+////            '5L|1|F'
+//        ],
+//        [
+//            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522090715',
+//            '2P|1|7030133133',
+//            '3O|1|7030133133|^69^4|^^^Testo^1|||||||||||Serum||||||||||F',
+//            '4R|1|^^^VitB12^1|0.82|nmol/L||N||F||||20240522090734|609385',
+////            '5L|1|F'
+//        ],
+//        [
+//            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522091633',
+//            '2P|1|7030133133',
+//            '3O|1|7030133133|^69^2|^^^SHBG^1|||||||||||Serum||||||||||F',
+//            '4R|1|^^^Ferritin^1|80.06|nmol/L||N||F||||20240522091652|609385',
+////            '5L|1|F'
+//        ],
+//        [
+//            '1H|\^&|||ACCESS^609385|||||LIS||P|1|20240522094427',
+//            '2P|1|7030133133',
+//            '3O|1|7030133133|^69^2|^^^hFSH^1|||||||||||Serum||||||||||F',
+//            '4R|1|^^^HBsAgV3^1|86.49|IU/L||N||F||||20240522094446|609385',
+////            '5L|1|F'
+//        ]
     ];
     private $server_socket;
     private $client_socket;
@@ -120,34 +120,45 @@ class StartDxI800_ServerCommand extends Command
                     $this->sendENQ();
                     if ($this->readResponse() === self::ACK) {
                         foreach ($message_group as $message) {
-                            $this->processAndSendMessage($message);
-                            sleep(1);
+                            $sent = $this->processAndSendMessage($message);
+                            if (!$sent) {
+                                break;
+                            }
                         }
+                        $this->sendEOT();
                         $response = $this->readResponse();
                         if ($response === self::ENQ) {
                             $this->handleENQ();
                         }
                     }
-//                    $this->closeConnection();
                 }
                 $this->closeConnection();
             }
         }
     }
 
-    private function processAndSendMessage(mixed $message): void
+    private function processAndSendMessage(mixed $message): bool
     {
-        $message = $message . self::CR . self::ETX;
+        $message .= self::CR . self::ETX;
         $checksum = str_pad($this->calculateChecksum($message), 2, '0', STR_PAD_LEFT);
+        echo "----------------------------------------------------------------\n";
+        echo "Message: $message\n";
         echo "Checksum: $checksum\n";
+        echo "----------------------------------------------------------------\n";
         $message = self::STX . $message . $checksum . self::CR . self::LF;
-//        $message = bin2hex($message);
         $this->sendMessage($message);
         $response = $this->readResponse();
-        if ($response === self::NAK) {
-            echo "NAK received, resending message\n";
-            $this->sendMessage($message);
+        if ($response !== self::ACK) {
+            $counter = 0;
+            while ($response !== self::ACK && $counter < 3) {
+                echo "Resending message\n";
+                $this->sendMessage($message);
+                $response = $this->readResponse();
+                $counter++;
+            }
         }
+
+        return $response === self::ACK;
     }
 
     public function calculateChecksum($message): string
@@ -158,7 +169,7 @@ class StartDxI800_ServerCommand extends Command
 
     private function sendMessage(string $message): void
     {
-        echo "Sending message: $message";
+        echo "Sending message: $message\n";
         echo "Sending message in hex: " . bin2hex($message) . "\n";
         $bytes_sent = socket_write($this->client_socket, $message, strlen($message));
         if ($bytes_sent === false) {
@@ -214,9 +225,14 @@ class StartDxI800_ServerCommand extends Command
         $order_info = $this->readResponse();
         echo "Order info: $order_info\n";
         $this->sendACK();
+        $terminator = $this->readResponse();
+        echo "Terminator: $terminator\n";
+        $this->sendACK();
+        $eot = $this->readResponse();
+        echo "EOT: $eot\n";
     }
 
-    private function sendENQ()
+    private function sendENQ(): void
     {
         $this->sendMessage(self::ENQ);
         echo "ENQ sent\n";
